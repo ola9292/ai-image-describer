@@ -1,0 +1,118 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Oswald:wght@200..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Image<br> Describer</h1>
+            <!-- <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd25pdmg5d2wybjNmdmQybWxjZWRndmlnYXg1ZGRpOGJmNnhwcWE1MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3og0IwpdeGI9nMVBjW/giphy.gif" alt="dog" width="100"> -->
+        </div>
+
+        <div id="app">
+
+            <div class="upload">
+                
+                <input type="file" accept="image/jpg" @change=handleUpload>
+            </div>
+            <div class="display-image" v-if="imageUrl != null">
+                <img class="blob" :src="imageUrl" alt="">
+            </div>
+            
+            <div class="summarize">
+                <div class="summary-length">
+                    1<input type="range" min="0" max="100" v-model="summary_length">100
+                    <p>Summary Length: { summary_length } words</p>
+                </div>
+                <button @click="uploadImage">Describe Image</button>
+            </div>
+
+
+            <div v-if="loading == true" class="waiting">
+                <span class="loader"></span>
+                <p>Loading...</p>
+            </div>
+            <div v-else>
+                <textarea name="" id="" placeholder="See image description here" v-model="summary">
+                    </textarea>
+            </div>
+
+            <div class="controls">
+                <button :disabled="summary == ''" @click="copyText">Copy</button>
+                <button @click="clearText">Clear</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    message: 'Hello Vue!',
+                    selectedFile: null,
+                    summary_length: 20,
+                    summary: "",
+                    imageUrl:null,
+                    loading: false,
+                }
+            },
+            delimiters: ['{', '}'],
+            methods: {
+                copyText() {
+                    if (this.summary != "") {
+                        window.navigator.clipboard.writeText(this.summary);
+                    }
+                },
+                clearText() {
+                    this.imageUrl = null
+                    this.summary = ""
+                },
+                handleUpload(event) {
+                    this.selectedFile = event.target.files[0];
+                    this.imageUrl = URL.createObjectURL(this.selectedFile);
+                    console.log(this.imageUrl)
+                },
+                async uploadImage() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', this.selectedFile);
+                        formData.append('text_length', this.summary_length);
+                        this.loading = true
+                        const response = await fetch('/process-image', {
+                            method: 'POST',
+                            body: formData
+
+                        });
+                        const data = await response.json();
+                        if (data) {
+                            this.loading = false
+                        }
+                        console.log(data)
+                        this.summary = data
+                       
+                    } catch (error) {
+                        throw new Error('Network error: ' + error.message);
+                    }
+                }
+            },
+        }).mount('#app')
+    </script>
+</body>
+
+</html>
